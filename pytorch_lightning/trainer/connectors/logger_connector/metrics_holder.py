@@ -12,7 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 import numbers
-from typing import Any
+from typing import Any, Dict
 
 import torch
 
@@ -33,13 +33,13 @@ class MetricsHolder:
         self.metrics = {}
         self._to_float = to_float
 
-    def update(self, metrics):
+    def update(self, metrics: Dict):
         self.metrics.update(metrics)
 
-    def pop(self, key, default):
+    def pop(self, key: Any, default: Any):
         return self.metrics.pop(key, default)
 
-    def reset(self, metrics):
+    def reset(self, metrics: Dict):
         self.metrics = metrics
 
     def convert(self, use_tpu: bool, device: torch.device):
@@ -48,10 +48,10 @@ class MetricsHolder:
 
     def _convert(self, current: Any, use_tpu: bool, device: torch.device):
         if self._to_float:
-            return self._convert_to_float(current, use_tpu, device)
+            return self._convert_to_float(current)
         return self._convert_to_tensor(current, use_tpu, device)
 
-    def _convert_to_float(self, current, use_tpu: bool, device: torch.device):
+    def _convert_to_float(self, current):
         if isinstance(current, Metric):
             current = current.compute().detach()
 
