@@ -14,7 +14,6 @@
 
 """Trainer to automate the training."""
 
-import os
 import warnings
 from pathlib import Path
 from typing import Dict, Iterable, List, Optional, Union
@@ -629,7 +628,7 @@ class Trainer(
     def run_evaluation(self, max_batches=None):
 
         # used to know if we are logging for val, test + reset cached results
-        self._set_wide_running_stage(RunningStage.TESTING if test_mode else RunningStage.EVALUATING)
+        self._set_wide_running_stage(RunningStage.TESTING if self.testing else RunningStage.EVALUATING)
         self.logger_connector.reset()
 
         # bookkeeping
@@ -679,7 +678,7 @@ class Trainer(
 
                 # lightning module methods
                 with self.profiler.profile("evaluation_step_and_end"):
-                    output = self.evaluation_loop.evaluation_step(test_mode, batch, batch_idx, dataloader_idx)
+                    output = self.evaluation_loop.evaluation_step(batch, batch_idx, dataloader_idx)
                     if self._predicting:
                         continue
                     output = self.evaluation_loop.evaluation_step_end(output)
@@ -870,10 +869,8 @@ class Trainer(
 
         # run tests
         self.tested_ckpt_path = ckpt_path
-        self.testing = True
         self.model = model
         results = self.fit(model)
-        self.testing = False
 
         # teardown
         if self.is_function_implemented('teardown'):
@@ -890,10 +887,8 @@ class Trainer(
 
         # run test
         # sets up testing so we short circuit to eval
-        self.testing = True
         self.model = model
         results = self.fit(model)
-        self.testing = False
 
         # teardown
         if self.is_function_implemented('teardown'):
@@ -928,14 +923,16 @@ class Trainer(
         # --------------------
         # SETUP HOOK
         # --------------------
+        self._set_wide_running_stage(RunningStage.TESTING)
+
         # If you supply a datamodule you can't supply dataloaders
         if dataloaders and datamodule:
             raise MisconfigurationException(
-                'You cannot pass dataloaders to trainer.predict if you supply a datamodule'
+                'You cannot pass dataloaders to trainer.predict if you supply a datamodule.'
             )
 
         if model is None:
-            raise MisconfigurationException('You need to pass a model to `trainer.predict`. ')
+            raise MisconfigurationException('You need to pass a model to `trainer.predict`.')
 
         if datamodule is not None:
             # Attach datamodule to get setup/prepare_data added to model before the call to it below
@@ -947,14 +944,12 @@ class Trainer(
 
         # set path variable
         self._predicting = True
-        os.environ['PL_TESTING_MODE'] = '1'
         self.model = model
 
         results = self.fit(model)
 
         # unset path variable
         self.teardown('test')
-        del os.environ['PL_TESTING_MODE']
         self._predicting = False
         self._set_wide_running_stage(None)
 

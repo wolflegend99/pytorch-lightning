@@ -256,7 +256,7 @@ class EvaluationLoop(object):
             eval_results = [eval_results]
 
         # track depreceated metrics
-        self.trainer.logger_connector.track_metrics_deprecated(eval_results, self.testing)
+        self.trainer.logger_connector.track_metrics_deprecated(eval_results)
 
         return eval_results
 

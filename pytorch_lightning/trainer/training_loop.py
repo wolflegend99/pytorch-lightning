@@ -19,7 +19,6 @@ import numpy as np
 import torch
 
 from pytorch_lightning.callbacks import ModelCheckpoint
-from pytorch_lightning.core.lightning import LightningModule
 from pytorch_lightning.core.memory import ModelSummary
 from pytorch_lightning.core.optimizer import LightningOptimizer
 from pytorch_lightning.core.step_result import Result
@@ -128,6 +127,9 @@ class TrainLoop:
 
         # check that model is configured correctly
         self.trainer.config_validator.verify_loop_configurations(model)
+
+        # attach model log function to callback
+        self.trainer.callback_connector.attach_model_logging_functions(model)
 
     def setup_training(self):
         """
@@ -558,7 +560,7 @@ class TrainLoop:
             # -----------------------------------------
             should_check_val = self.should_check_val_fx(batch_idx, is_last_batch)
             if should_check_val:
-                self.trainer.run_evaluation(test_mode=False)
+                self.trainer.run_evaluation()
 
                 # reset stage to train
                 self.trainer._set_wide_running_stage(RunningStage.TRAINING)
