@@ -22,6 +22,7 @@ from copy import deepcopy
 from functools import partial
 from typing import Callable, List, Optional, Tuple, Union
 
+import torch
 from torch import nn
 from torch.nn.modules.container import ModuleDict, ModuleList
 
@@ -138,6 +139,7 @@ class ModelPruning(Callback):
         self._parameter_names = parameter_names or self.PARAMETER_NAMES
         self._global_kwargs = {}
         self._initial_parameters_to_prune = None
+        self._sparity_history = []
 
         for param_name in self._parameter_names:
             if param_name not in self.PARAMETER_NAMES:
@@ -304,6 +306,7 @@ class ModelPruning(Callback):
             self._initial_parameters_to_prune = [(deepcopy(m), n) for m, n in self._parameters_to_prune]
 
     def on_epoch_end(self, trainer, pl_module):
+        self._sparity_history.append([trainer.current_epoch, self.sparsity])
         self.apply_pruning(trainer, pl_module)
 
         if self.make_pruning_permanent:
@@ -388,3 +391,13 @@ class ModelPruning(Callback):
                     "with 2 elements: (nn.Module in your model, parameter_name_to_prune) or None")
 
         return parameters_to_prune
+
+    def sparsity(self):
+        total_num_parameters = 0.
+        total_num_zero_parameters = 0.
+        for module, param_name in self._parameters_to_prune:
+            param = getattr(module, param_name)
+            if param is not None:
+                total_num_parameters += param.nelement()
+                total_num_zero_parameters += torch.sum(param == 0)
+        return total_num_zero_parameters / total_num_parameters
