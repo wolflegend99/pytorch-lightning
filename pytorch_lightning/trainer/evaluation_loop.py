@@ -21,6 +21,7 @@ from pytorch_lightning.utilities.warnings import WarningCache
 
 
 class EvaluationLoop(object):
+
     def __init__(self, trainer):
         self.trainer = trainer
         self.outputs = []
@@ -305,7 +306,8 @@ class EvaluationLoop(object):
     def on_evaluation_batch_start(self, batch, batch_idx, dataloader_idx):
         # set dataloader_idx to model and track batch_size
         self.trainer.logger_connector.on_evaluation_batch_start(
-            self.trainer.testing, batch, dataloader_idx, self.num_dataloaders)
+            self.testing, batch, dataloader_idx, self.num_dataloaders
+        )
 
         if self.trainer.testing:
             self.trainer.call_hook('on_test_batch_start', batch, batch_idx, dataloader_idx)
