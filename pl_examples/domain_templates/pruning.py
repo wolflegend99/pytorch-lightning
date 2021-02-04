@@ -21,6 +21,7 @@ To run:
 python conv_model_sequential_example.py --accelerator ddp --gpus 4 --max_epochs 1  --batch_size 256 --use_ddp_sequential
 """
 import math
+import sys
 from argparse import ArgumentParser
 
 import torch
@@ -30,9 +31,9 @@ import torchvision
 
 import pytorch_lightning as pl
 from pl_examples import cli_lightning_logo
-from pytorch_lightning import Trainer
+from pytorch_lightning import callbacks, Trainer
+from pytorch_lightning.callbacks import ModelPruning
 from pytorch_lightning.metrics.functional import accuracy
-from pytorch_lightning.plugins.legacy.ddp_sequential_plugin import DDPSequentialPlugin
 from pytorch_lightning.utilities import _BOLTS_AVAILABLE
 
 if _BOLTS_AVAILABLE:
@@ -202,10 +203,10 @@ if __name__ == "__main__":
 
     cli_lightning_logo()
     parser = ArgumentParser(description="Pipe Example")
-    parser.add_argument("--use_ddp_sequential", action="store_true")
     parser = Trainer.add_argparse_args(parser)
     parser = pl_bolts.datamodules.CIFAR10DataModule.add_argparse_args(parser)
-    args = parser.parse_args()
+    cmd_line = ' '.join(sys.argv[2:]) if len(sys.argv[2:]) > 0 else "--max_epochs 10".split(" ")
+    args = parser.parse_args(cmd_line)
 
     assert _BOLTS_AVAILABLE, "Bolts is required for this example, install it via ``pip install pytorch-lightning-bolts``"
 
@@ -213,6 +214,26 @@ if __name__ == "__main__":
 
     model = LitResnet(batch_size=args.batch_size, manual_optimization=not args.automatic_optimization)
 
-    trainer = pl.Trainer.from_argparse_args(args)
+    def configure_amount(current_epoch):
+        """
+        This function is used to generate amount to prune the model on a given epoch.
+
+        .. Note:: The total amount returned by this function accross the entire pruning training
+            should be stricly smaller than 1.
+
+        """
+
+        if current_epoch == int((1 / 3) * args.max_epochs):
+            return 0.5
+
+        elif current_epoch == int((2 / 3) * args.max_epochs):
+            return 0.2
+
+        elif current_epoch == int((2.5 / 3) * args.max_epochs):
+            return 0.1
+
+    model_pruning = ModelPruning()
+
+    trainer = pl.Trainer.from_argparse_args(args, callbacks=[model_pruning])
     trainer.fit(model, cifar10_dm)
     trainer.test(model, datamodule=cifar10_dm)
