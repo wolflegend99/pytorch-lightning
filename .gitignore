@@ -148,3 +148,4 @@ wandb
 .forked/
 *.prof
 *.tar.gz
+cifar-10-batches-py
