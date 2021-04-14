@@ -18,7 +18,7 @@ Early Stopping
 Monitor a metric and stop training when it stops improving.
 
 """
-from typing import Any, Callable, Dict, Mapping, TYPE_CHECKING
+from typing import Any, Dict, Mapping, TYPE_CHECKING
 
 import numpy as np
 import torch
