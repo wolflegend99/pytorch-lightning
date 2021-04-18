@@ -393,7 +393,7 @@ class DQNLightning(pl.LightningModule):
         parser = parent_parser.add_argument_group("DQNLightning")
         parser.add_argument("--batch_size", type=int, default=16, help="size of the batches")
         parser.add_argument("--lr", type=float, default=1e-2, help="learning rate")
-        parser.add_argument("--env", type=str, default="CartPole-v0", help="gym environment tag")
+        parser.add_argument("--env", type=str, default="CartPole-v1", help="gym environment tag")
         parser.add_argument("--gamma", type=float, default=0.99, help="discount factor")
         parser.add_argument("--sync_rate", type=int, default=10, help="how many frames do we update the target network")
         parser.add_argument("--replay_size", type=int, default=1000, help="capacity of the replay buffer")
